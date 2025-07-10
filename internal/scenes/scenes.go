@@ -42,22 +42,23 @@ func (s *Scene) Render(screen *ebiten.Image) {
 				tileID := s.layers[layerIndex][row][column]
 				if tile, ok := static.TileMap[tileID]; ok && tile.Image != nil {
 					op := &ebiten.DrawImageOptions{}
-					tx, ty := float64(column*tileW), float64(row*tileH)
+					sx, sy := float64(cellWidth)/float64(tileW), float64(cellHeight)/float64(tileH)
+					tx, ty := float64(column*cellWidth), float64(row*cellHeight)
 
 					if tile.Width != tile.Height {
 						switch tile.Align {
 						case static.TileAlignLeft:
-							tx = float64(column*tileW) - float64(cellWidth-tile.Width)
+							tx = float64(column*cellWidth) - (float64(cellWidth) - float64(tile.Width)*sx)
 						case static.TileAlignRight:
-							tx = float64(column*tileW) + float64(cellWidth-tile.Width)
+							tx = float64(column*cellWidth) + (float64(cellWidth) - float64(tile.Width)*sx)
 						case static.TileAlignTop:
-							ty = float64(row*tileH) - float64(cellHeight-tile.Height)
+							ty = float64(row*cellHeight) - (float64(cellHeight) - float64(tile.Height)*sy)
 						case static.TileAlignBottom:
-							ty = float64(row*tileH) + float64(cellHeight-tile.Height)
+							ty = float64(row*cellHeight) + (float64(cellHeight) - float64(tile.Height)*sy)
 						}
 					}
 
-					op.GeoM.Scale(float64(cellWidth)/float64(tileW), float64(cellHeight)/float64(tileH))
+					op.GeoM.Scale(sx, sy)
 					op.GeoM.Translate(tx, ty)
 					screen.DrawImage(tile.Image, op)
 				}
