@@ -13,3 +13,7 @@ rows = 20
 [game.sprite]
 width = 32
 height = 32
+
+[game.tile]
+width = 128
+height = 128

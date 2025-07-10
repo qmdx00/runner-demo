@@ -10,7 +10,7 @@ import (
 
 func main() {
 	config.InitConfig()
-	static.InitSprites()
+	static.InitStatic()
 	game := internal.NewGame()
 	if err := ebiten.RunGame(game); err != nil {
 		panic(err)

@@ -29,6 +29,11 @@ type Config struct {
 			Width  int `mapstructure:"width"`
 			Height int `mapstructure:"height"`
 		} `mapstructure:"sprite"`
+
+		Tile struct {
+			Width  int `mapstructure:"width"`
+			Height int `mapstructure:"height"`
+		} `mapstructure:"tile"`
 	} `mapstructure:"game"`
 }
 

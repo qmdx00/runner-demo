@@ -1,7 +1,7 @@
 package assets
 
 import (
-	_ "embed"
+	"embed"
 )
 
 var (
@@ -13,7 +13,14 @@ var (
 
 	//go:embed sprites/runner_jump.png
 	RunnerJumpImage []byte
+)
 
-	//go:embed tiles/background.png
+var (
+	//go:embed background/background.png
 	BackgroundImage []byte
+)
+
+var (
+	//go:embed tiles/*
+	TileFiles embed.FS
 )

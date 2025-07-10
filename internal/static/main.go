@@ -3,6 +3,7 @@ package static
 import (
 	"bytes"
 	"image"
+	"io/fs"
 	"log"
 	"runner-demo/assets"
 
@@ -18,6 +19,25 @@ var (
 var (
 	BackgroundImage_png *ebiten.Image
 )
+
+var (
+	TileImagesMap = make(map[string]*ebiten.Image)
+)
+
+func InitStatic() {
+	InitBackground()
+	InitSprites()
+	InitTiles()
+	InitTileMap()
+}
+
+func InitBackground() {
+	bgImage, _, err := image.Decode(bytes.NewReader(assets.BackgroundImage))
+	if err != nil {
+		log.Fatal(err)
+	}
+	BackgroundImage_png = ebiten.NewImageFromImage(bgImage)
+}
 
 func InitSprites() {
 	idleImage, _, err := image.Decode(bytes.NewReader(assets.RunnerIdleImage))
@@ -37,10 +57,34 @@ func InitSprites() {
 		log.Fatal(err)
 	}
 	RunnerJumpSprite = NewFrameSprite(ebiten.NewImageFromImage(jumpImage), 12)
+}
 
-	bgImage, _, err := image.Decode(bytes.NewReader(assets.BackgroundImage))
+func InitTiles() {
+	tileFS, err := fs.Sub(assets.TileFiles, "tiles")
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
-	BackgroundImage_png = ebiten.NewImageFromImage(bgImage)
+
+	entries, err := fs.ReadDir(tileFS, ".")
+	if err != nil {
+		panic(err)
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+
+		imgData, err := fs.ReadFile(tileFS, entry.Name())
+		if err != nil {
+			panic(err)
+		}
+
+		img, _, err := image.Decode(bytes.NewReader(imgData))
+		if err != nil {
+			panic(err)
+		}
+
+		TileImagesMap[entry.Name()] = ebiten.NewImageFromImage(img)
+	}
 }

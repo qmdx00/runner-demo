@@ -22,7 +22,7 @@ type Runner struct {
 func NewRunner() *Runner {
 	return &Runner{
 		ticker:       NewTicker(),
-		pos:          NewPosition(0, 10),
+		pos:          NewPosition(0, 16),
 		stateM:       NewStateMachine(state.RunnerStateIdle),
 		runningSpeed: 0.1, // 8.0 grid cell per frame
 		jumpingSpeed: 0.2, // 2.0 grid cell per frame

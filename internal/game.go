@@ -2,9 +2,11 @@ package internal
 
 import (
 	"fmt"
+	"runner-demo/assets/maps"
 	"runner-demo/internal/config"
 	"runner-demo/internal/event"
 	"runner-demo/internal/input"
+	"runner-demo/internal/scenes"
 	"runner-demo/internal/static"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -16,6 +18,7 @@ var _ ebiten.Game = (*Game)(nil)
 type Game struct {
 	ticker *Ticker
 	runner *Runner
+	scene  *scenes.Scene
 }
 
 // NewGame creates a new instance of Game.
@@ -27,6 +30,7 @@ func NewGame() *Game {
 	return &Game{
 		ticker: NewTicker(),
 		runner: NewRunner(),
+		scene:  scenes.NewDefaultScene(maps.MAP_1_Water, maps.MAP_1_Soil),
 	}
 }
 
@@ -54,6 +58,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	// }
 
 	g.drawBackground(screen, static.BackgroundImage_png)
+	g.scene.Render(screen)
 	g.runner.Render(screen)
 
 	ebitenutil.DebugPrint(screen, fmt.Sprintf(
