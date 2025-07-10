@@ -1,12 +1,15 @@
 [game]
-
 title = "Runner Game"
 scale = 1.0
 
 [game.window]
-width = 800
-height = 640
+width = 1600
+height = 1280
 
-[game.cell]
+[game.grid]
+columns = 25
+rows = 20
+
+[game.sprite]
 width = 32
 height = 32

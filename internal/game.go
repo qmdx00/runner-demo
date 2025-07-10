@@ -22,6 +22,7 @@ type Game struct {
 func NewGame() *Game {
 	ebiten.SetWindowTitle(config.Global.Game.Title)
 	ebiten.SetWindowSize(config.Global.Game.Window.Width, config.Global.Game.Window.Height)
+	ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
 
 	return &Game{
 		ticker: NewTicker(),
@@ -38,33 +39,31 @@ func (g *Game) Layout(outsideWidth int, outsideHeight int) (screenWidth int, scr
 // Draw ...
 func (g *Game) Draw(screen *ebiten.Image) {
 	// // render the background grid for debugging purposes
-	// for y := 0; y < config.Global.Game.Window.Height; y += config.Global.Game.Cell.Height {
-	// 	for x := 0; x < config.Global.Game.Window.Width; x += config.Global.Game.Cell.Width {
+	// columns, rows := config.Global.Game.Grid.Columns, config.Global.Game.Grid.Rows
+	// cellWidth := screen.Bounds().Dx() / columns
+	// cellHeight := screen.Bounds().Dy() / rows
+	// for y := range rows {
+	// 	for x := range columns {
 	// 		opt := &ebiten.DrawImageOptions{}
-	// 		opt.GeoM.Translate(float64(x), float64(y))
-	// 		cell := ebiten.NewImage(config.Global.Game.Cell.Width, config.Global.Game.Cell.Height)
+	// 		opt.GeoM.Translate(float64(x*cellWidth), float64(y*cellHeight))
+	// 		cell := ebiten.NewImage(cellWidth, cellHeight)
 	// 		random := uint8(rand.IntN(255)) // Random value for color
 	// 		cell.Fill(color.RGBA{R: random, G: random, B: random, A: 255})
 	// 		screen.DrawImage(cell, opt)
 	// 	}
 	// }
 
-	// for index := range static.RunnerIdleSprite.Frames() {
-	// 	ops := &ebiten.DrawImageOptions{}
-	// 	ops.GeoM.Translate(float64(index*static.RunnerIdleSprite.FrameWidth), 100)
-	// 	screen.DrawImage(static.RunnerIdleSprite.FrameByTicker(index), ops)
-	// }
-
-	// for index := range static.RunnerRunSprite.Frames() {
-	// 	ops := &ebiten.DrawImageOptions{}
-	// 	ops.GeoM.Translate(float64(index*static.RunnerRunSprite.FrameWidth), 200)
-	// 	screen.DrawImage(static.RunnerRunSprite.FrameByTicker(index), ops)
-	// }
-
 	g.drawBackground(screen, static.BackgroundImage_png)
 	g.runner.Render(screen)
 
-	ebitenutil.DebugPrint(screen, fmt.Sprintf("Welcome to the Runner Game!\nUse arrow keys to move the player.\nPosition: (%.2f, %.2f)\nState: %s", g.runner.pos.X, g.runner.pos.Y, g.runner.stateM.CurrentState()))
+	ebitenutil.DebugPrint(screen, fmt.Sprintf(
+		`Welcome to the Runner Game!
+Window Size: (%d, %d)
+Position: (%.2f, %.2f)
+State: %s`,
+		screen.Bounds().Dx(), screen.Bounds().Dy(),
+		g.runner.pos.X, g.runner.pos.Y,
+		g.runner.stateM.CurrentState()))
 }
 
 // Update ...

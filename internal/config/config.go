@@ -20,10 +20,15 @@ type Config struct {
 			Height int `mapstructure:"height"`
 		} `mapstructure:"window"`
 
-		Cell struct {
+		Grid struct {
+			Columns int `mapstructure:"columns"`
+			Rows    int `mapstructure:"rows"`
+		} `mapstructure:"grid"`
+
+		Sprite struct {
 			Width  int `mapstructure:"width"`
 			Height int `mapstructure:"height"`
-		} `mapstructure:"cell"`
+		} `mapstructure:"sprite"`
 	} `mapstructure:"game"`
 }
 
