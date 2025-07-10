@@ -1,7 +1,16 @@
 package main
 
-import "fmt"
+import (
+	"runner-demo/internal"
+	"runner-demo/internal/config"
+
+	"github.com/hajimehoshi/ebiten/v2"
+)
 
 func main() {
-	fmt.Println("Hello, World!")
+	config.InitConfig()
+	game := internal.NewGame()
+	if err := ebiten.RunGame(game); err != nil {
+		panic(err)
+	}
 }

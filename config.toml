@@ -1,0 +1,12 @@
+[game]
+
+title = "Runner Game"
+scale = 1.0
+
+[game.window]
+width = 800
+height = 640
+
+[game.cell]
+width = 32
+height = 32
