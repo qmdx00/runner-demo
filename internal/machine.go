@@ -37,7 +37,8 @@ func (sm *StateMachine) HandleEvent() {
 }
 
 func (sm *StateMachine) transition(e event.RunnerEvent) {
-	fromState, toState := sm.currentState, state.RunnerStateIdle
+	fromState := sm.currentState
+	toState := fromState // Default to current state (no transition)
 
 	switch fromState {
 	case state.RunnerStateIdle:
@@ -66,9 +67,15 @@ func (sm *StateMachine) transition(e event.RunnerEvent) {
 			toState = state.RunnerStateJumpCharging
 		}
 	case state.RunnerStateRunDecelerating:
-		// not effected by event
+		switch e {
+		case event.InputMoveRight:
+			toState = state.RunnerStateRunAccelerating
+		case event.InputJumpPress:
+			toState = state.RunnerStateJumpCharging
+		}
 	case state.RunnerStateRunStopping:
-		// not effected by event
+		// This state should transition to idle when velocity reaches zero
+		// This will be handled by the runner logic
 	case state.RunnerStateJumpCharging:
 		switch e {
 		case event.InputJumpRelease:
@@ -86,6 +93,6 @@ func (sm *StateMachine) transition(e event.RunnerEvent) {
 
 	// DEBUG: Log the state transition
 	if fromState != toState {
-		fmt.Printf("Transitioning from %s to %s due to event %s\n", fromState, toState, e)
+		fmt.Printf("Transitioning from [%s] to [%s] due to event [%s]\n", fromState, toState, e)
 	}
 }

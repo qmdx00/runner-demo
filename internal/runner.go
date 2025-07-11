@@ -25,10 +25,13 @@ type Runner struct {
 }
 
 func NewRunner() *Runner {
+	stateM := NewStateMachine(state.RunnerStateIdle)
+	go stateM.HandleEvent()
+
 	return &Runner{
 		ticker: NewTicker(),
 		pos:    NewPosition(0, 16),
-		stateM: NewStateMachine(state.RunnerStateIdle),
+		stateM: stateM,
 
 		maxVX:        0.5,  // 0.1 grid cell per 100ms
 		maxVY:        1.0,  // 0.2 grid cell per 100ms
@@ -61,9 +64,6 @@ func (r *Runner) HandleStateTransitions() error {
 	// 	r.stateM.PushEvent(event.RunnerLanded)
 	// }
 
-	// Process all events in the event bus
-	r.stateM.HandleEvent()
-
 	if r.latestUpdate == 0 {
 		r.latestUpdate = time.Now().UnixMilli()
 	}
@@ -73,23 +73,28 @@ func (r *Runner) HandleStateTransitions() error {
 		if r.vX < r.maxVX {
 			r.vX += r.acceleration
 		} else {
-			// Transition to cruising when max velocity is reached
-			r.stateM.PushEvent(event.InputMoveRight) // This will be handled by the state machine
+			// Velocity has reached maximum, transition to cruising
+			r.vX = r.maxVX
+			r.stateM.PushEvent(event.InputMoveRight) // This will trigger transition to cruising
 		}
 	case state.RunnerStateRunCruising:
-		// Maintain velocity
+		// Maintain maximum velocity
+		r.vX = r.maxVX
 	case state.RunnerStateRunDecelerating:
 		if r.vX > 0 {
 			r.vX -= r.acceleration
-			if r.vX < 0 {
+			if r.vX <= 0 {
 				r.vX = 0
+				// Transition to idle when velocity reaches zero
+				r.stateM.currentState = state.RunnerStateIdle
 			}
 		}
 	case state.RunnerStateJumpCharging:
 		if r.vY < r.maxVY {
 			r.vY += r.acceleration
 		} else {
-			// Transition to rising when max velocity is reached
+			// Velocity has reached maximum, transition to rising
+			r.vY = r.maxVY
 			r.stateM.PushEvent(event.InputJumpRelease)
 		}
 	case state.RunnerStateJumpRising:
