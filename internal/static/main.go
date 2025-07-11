@@ -27,6 +27,7 @@ var (
 func InitStatic() {
 	InitBackground()
 	InitSprites()
+	InitStateFrames()
 	InitTiles()
 	InitTileMap()
 }

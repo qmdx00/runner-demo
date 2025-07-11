@@ -181,14 +181,5 @@ func (r *Runner) Render(screen *ebiten.Image) {
 }
 
 func (r *Runner) imageByState() *ebiten.Image {
-	switch r.stateM.currentState {
-	case state.RunnerStateIdle, state.RunnerStateRunStopped, state.RunnerStateJumpLanded:
-		return static.RunnerIdleSprite.FrameByTicker(int(r.ticker.counter))
-	case state.RunnerStateRunAccelerating, state.RunnerStateRunCruising, state.RunnerStateRunDecelerating:
-		return static.RunnerRunSprite.FrameByTicker(int(r.ticker.counter))
-	case state.RunnerStateJumpCharging, state.RunnerStateJumpRising, state.RunnerStateJumpFalling:
-		return static.RunnerJumpSprite.FrameByTicker(int(r.ticker.counter))
-	default:
-		panic("unknown runner state")
-	}
+	return static.RunnerIdleSprite.FrameByStateAndTicker(r.stateM.CurrentState(), int(r.ticker.counter))
 }

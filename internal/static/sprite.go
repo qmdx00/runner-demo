@@ -3,9 +3,12 @@ package static
 import (
 	"image"
 	"runner-demo/internal/config"
+	"runner-demo/internal/state"
 
 	"github.com/hajimehoshi/ebiten/v2"
 )
+
+var StateFrameMap = make(map[state.RunnerState][]*ebiten.Image)
 
 type Sprite struct {
 	frames []*ebiten.Image
@@ -35,11 +38,28 @@ func NewFrameSprite(img *ebiten.Image, frameCount int) *Sprite {
 	}
 }
 
-func (s *Sprite) FrameByTicker(tick int) *ebiten.Image {
-	index := (tick / 10) % s.FrameCount
-	return s.frames[index]
+func (s *Sprite) FrameByStateAndTicker(runnerState state.RunnerState, tick int) *ebiten.Image {
+	if frames := StateFrameMap[runnerState]; len(frames) > 0 {
+		index := (tick / 10) % len(frames)
+		return frames[index]
+	}
+	return RunnerIdleSprite.Frames()[0] // Fallback to idle frame if no frames found for the state
 }
 
 func (s *Sprite) Frames() []*ebiten.Image {
 	return s.frames
+}
+
+func InitStateFrames() {
+	StateFrameMap = map[state.RunnerState][]*ebiten.Image{
+		state.RunnerStateIdle:            RunnerIdleSprite.Frames(),
+		state.RunnerStateRunAccelerating: RunnerRunSprite.Frames()[:4],
+		state.RunnerStateRunCruising:     RunnerRunSprite.Frames(),
+		state.RunnerStateRunDecelerating: RunnerRunSprite.Frames()[4:],
+		state.RunnerStateRunStopped:      RunnerIdleSprite.Frames(),
+		state.RunnerStateJumpCharging:    RunnerJumpSprite.Frames()[:4],
+		state.RunnerStateJumpRising:      RunnerJumpSprite.Frames()[4:6],
+		state.RunnerStateJumpFalling:     RunnerJumpSprite.Frames()[6:10],
+		state.RunnerStateJumpLanded:      RunnerJumpSprite.Frames()[11:],
+	}
 }
