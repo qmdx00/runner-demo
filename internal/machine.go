@@ -1,7 +1,7 @@
 package internal
 
 import (
-	"fmt"
+	"log"
 	"runner-demo/internal/event"
 	"runner-demo/internal/state"
 )
@@ -84,7 +84,7 @@ func (sm *StateMachine) transition(e event.RunnerEvent) {
 		}
 	case state.RunnerStateJumpCharging:
 		switch e {
-		case event.InputJumpRelease:
+		case event.InputJumpRelease, event.RunnerJumpChargeTimeout:
 			toState = state.RunnerStateJumpRising
 		}
 	case state.RunnerStateJumpRising:
@@ -112,6 +112,6 @@ func (sm *StateMachine) transition(e event.RunnerEvent) {
 
 	// DEBUG: Log the state transition
 	if fromState != toState {
-		fmt.Printf("Transitioning from [%s] to [%s] due to event [%s]\n", fromState, toState, e)
+		log.Printf("Transitioning from [%s] to [%s] due to event [%s]\n", fromState, toState, e)
 	}
 }

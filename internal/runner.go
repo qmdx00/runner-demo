@@ -26,7 +26,10 @@ type Runner struct {
 	vX           float64 // horizontal velocity for running
 	vY           float64 // vertical velocity for jumping
 	acceleration float64 // acceleration rate for running
-	latestUpdate int64   // latest update time for the runner
+
+	latestUpdateAt    int64 // latest update time for the runner
+	jumpChargeStartAt int64 // jump charge start time
+	maxJumpChargeTime int64 // maximum time for jump charge
 }
 
 func NewRunner() *Runner {
@@ -41,10 +44,12 @@ func NewRunner() *Runner {
 		maxVX:        0.5,  // 0.5 grid cell per 100ms
 		maxVY:        1.0,  // 1.0 grid cell per 100ms
 		acceleration: 0.03, // slightly slower acceleration for better control
+
+		maxJumpChargeTime: 500,
 	}
 }
 
-func (r *Runner) HandleStateTransitions() error {
+func (r *Runner) handleKeyBoardInput() {
 	// move input handling
 	if ebiten.IsKeyPressed(ebiten.KeyArrowRight) || ebiten.IsKeyPressed(ebiten.KeyD) {
 		r.stateM.PushEvent(event.InputMoveRight)
@@ -60,9 +65,13 @@ func (r *Runner) HandleStateTransitions() error {
 	} else {
 		r.stateM.PushEvent(event.InputJumpRelease)
 	}
+}
 
-	if r.latestUpdate == 0 {
-		r.latestUpdate = time.Now().UnixMilli()
+func (r *Runner) HandleStateTransitions() error {
+	r.handleKeyBoardInput()
+
+	if r.latestUpdateAt == 0 {
+		r.latestUpdateAt = time.Now().UnixMilli()
 	}
 
 	switch r.stateM.CurrentState() {
@@ -89,13 +98,26 @@ func (r *Runner) HandleStateTransitions() error {
 	case state.RunnerStateRunStopped:
 		r.vX = 0 // Reset horizontal velocity on stop
 	case state.RunnerStateJumpCharging:
-		// Build up jump power
-		if r.vY < r.maxVY {
-			r.vY += r.acceleration * 2 // Faster charge rate
+		// initialize jump charge start time if not set
+		if r.jumpChargeStartAt == 0 {
+			r.jumpChargeStartAt = time.Now().UnixMilli()
+		}
+
+		// check if the jump charge timeout
+		chargeTime := time.Now().UnixMilli() - r.jumpChargeStartAt
+		if chargeTime >= r.maxJumpChargeTime {
+			r.stateM.PushEvent(event.RunnerJumpChargeTimeout)
 		} else {
-			r.vY = r.maxVY
+			if r.vY < r.maxVY {
+				r.vY += r.acceleration
+			} else {
+				r.vY = r.maxVY
+			}
 		}
 	case state.RunnerStateJumpRising:
+		// reset jump charge start time
+		r.jumpChargeStartAt = 0
+
 		// Apply gravity
 		r.vY -= r.acceleration * 1.5
 		if r.vY <= 0 {
@@ -133,13 +155,13 @@ func (r *Runner) HandleStateTransitions() error {
 	// calculate the movement distance based on the velocity
 	var dx, dy float64
 	currentTime := time.Now().UnixMilli()
-	dt := float64(currentTime-r.latestUpdate) / 100.0
+	dt := float64(currentTime-r.latestUpdateAt) / 100.0
 	dx = r.vX * dt
 	dy = -r.vY * dt // negative because positive vY should move up (negative screen coordinates)
 	r.pos.MoveInWindow(dx, dy)
 
 	// update the latest update time
-	r.latestUpdate = currentTime
+	r.latestUpdateAt = currentTime
 
 	return nil
 }

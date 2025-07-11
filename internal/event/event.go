@@ -16,6 +16,7 @@ const (
 	RunnerReachedMaxVerticalHeight
 	RunnerVerticalLanded
 	RunnerHorizontalStopped
+	RunnerJumpChargeTimeout // 跳跃蓄力时间到达上限
 )
 
 func (e RunnerEvent) String() string {
@@ -38,6 +39,8 @@ func (e RunnerEvent) String() string {
 		return "Vertical Landed"
 	case RunnerHorizontalStopped:
 		return "Horizontal Stopped"
+	case RunnerJumpChargeTimeout:
+		return "Jump Charge Timeout"
 	default:
 		return "Unknown"
 	}
