@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"runner-demo/assets/maps"
 	"runner-demo/internal/config"
-	"runner-demo/internal/event"
-	"runner-demo/internal/input"
 	"runner-demo/internal/scenes"
 	"runner-demo/internal/static"
 
@@ -65,9 +63,13 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		`Welcome to the Runner Game!
 Window Size: (%d, %d)
 Position: (%.2f, %.2f)
+Velocity: (%.2f, %.2f)
+Max Velocity: (%.2f, %.2f)
 State: %s`,
 		screen.Bounds().Dx(), screen.Bounds().Dy(),
 		g.runner.pos.X, g.runner.pos.Y,
+		g.runner.vX, g.runner.vY,
+		g.runner.maxVX, g.runner.maxVY,
 		g.runner.stateM.CurrentState()))
 }
 
@@ -75,13 +77,7 @@ State: %s`,
 func (g *Game) Update() error {
 	g.ticker.Tick()
 
-	var controlEvent event.RunnerControlEvent = event.EventStop
-	for key, e := range input.KeyboardEventMap {
-		if ebiten.IsKeyPressed(key) {
-			controlEvent = e
-		}
-	}
-	g.runner.HandleInput(controlEvent)
+	g.runner.HandleStateTransitions()
 
 	return nil
 }

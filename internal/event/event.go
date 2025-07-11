@@ -4,25 +4,19 @@ type RunnerControlEvent uint8
 
 const (
 	EventUnknown RunnerControlEvent = iota
-	EventRun
+	EventAccelerate
+	EventDecelerate
 	EventJump
-	EventStop
-	EventPause
-	EventResume
 )
 
 func (e RunnerControlEvent) String() string {
 	switch e {
-	case EventRun:
-		return "Run"
+	case EventAccelerate:
+		return "Accelerate"
+	case EventDecelerate:
+		return "Decelerate"
 	case EventJump:
 		return "Jump"
-	case EventStop:
-		return "Stop"
-	case EventPause:
-		return "Pause"
-	case EventResume:
-		return "Resume"
 	default:
 		return "Unknown"
 	}
