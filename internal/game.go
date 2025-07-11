@@ -28,7 +28,8 @@ func NewGame() *Game {
 	return &Game{
 		ticker: NewTicker(),
 		runner: NewRunner(),
-		scene:  scenes.NewDefaultScene(maps.MAP_1_Water, maps.MAP_1_Soil),
+		// scene:  scenes.NewDefaultScene(maps.MAP_1_Water, maps.MAP_1_Soil),
+		scene: scenes.NewDefaultScene(maps.MAP_1_Test),
 	}
 }
 

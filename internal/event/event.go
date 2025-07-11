@@ -12,9 +12,10 @@ const (
 	InputJumpPress
 	InputJumpRelease
 
-	RunnerVelocityYNegative
-	RunnerGrounded
-	RunnerLanded
+	RunnerReachedMaxHorizontalSpeed
+	RunnerReachedMaxVerticalHeight
+	RunnerVerticalLanded
+	RunnerHorizontalStopped
 )
 
 func (e RunnerEvent) String() string {
@@ -29,12 +30,14 @@ func (e RunnerEvent) String() string {
 		return "Jump Press"
 	case InputJumpRelease:
 		return "Jump Release"
-	case RunnerVelocityYNegative:
-		return "Velocity Y Negative"
-	case RunnerGrounded:
-		return "Grounded"
-	case RunnerLanded:
-		return "Landed"
+	case RunnerReachedMaxHorizontalSpeed:
+		return "Reached Max Horizontal Speed"
+	case RunnerReachedMaxVerticalHeight:
+		return "Reached Max Vertical Height"
+	case RunnerVerticalLanded:
+		return "Vertical Landed"
+	case RunnerHorizontalStopped:
+		return "Horizontal Stopped"
 	default:
 		return "Unknown"
 	}

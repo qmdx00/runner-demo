@@ -50,7 +50,7 @@ func (sm *StateMachine) transition(e event.RunnerEvent) {
 		}
 	case state.RunnerStateRunAccelerating:
 		switch e {
-		case event.InputMoveRight:
+		case event.RunnerReachedMaxHorizontalSpeed:
 			toState = state.RunnerStateRunCruising
 		case event.InputMoveRelease:
 			toState = state.RunnerStateRunDecelerating
@@ -59,9 +59,7 @@ func (sm *StateMachine) transition(e event.RunnerEvent) {
 		}
 	case state.RunnerStateRunCruising:
 		switch e {
-		case event.InputMoveLeft:
-			toState = state.RunnerStateRunDecelerating
-		case event.InputMoveRelease:
+		case event.InputMoveLeft, event.InputMoveRelease:
 			toState = state.RunnerStateRunDecelerating
 		case event.InputJumpPress:
 			toState = state.RunnerStateJumpCharging
@@ -72,21 +70,42 @@ func (sm *StateMachine) transition(e event.RunnerEvent) {
 			toState = state.RunnerStateRunAccelerating
 		case event.InputJumpPress:
 			toState = state.RunnerStateJumpCharging
+		case event.RunnerHorizontalStopped:
+			toState = state.RunnerStateRunStopped
 		}
-	case state.RunnerStateRunStopping:
-		// This state should transition to idle when velocity reaches zero
-		// This will be handled by the runner logic
+	case state.RunnerStateRunStopped:
+		switch e {
+		case event.InputMoveRight:
+			toState = state.RunnerStateRunAccelerating
+		case event.InputMoveRelease:
+			toState = state.RunnerStateIdle
+		case event.InputJumpPress:
+			toState = state.RunnerStateJumpCharging
+		}
 	case state.RunnerStateJumpCharging:
 		switch e {
 		case event.InputJumpRelease:
 			toState = state.RunnerStateJumpRising
 		}
 	case state.RunnerStateJumpRising:
-		// not effected by event
+		switch e {
+		case event.RunnerReachedMaxVerticalHeight:
+			toState = state.RunnerStateJumpFalling
+		}
 	case state.RunnerStateJumpFalling:
-		// not effected by event
-	case state.RunnerStateJumpLanding:
-		// not effected by event
+		switch e {
+		case event.RunnerVerticalLanded:
+			toState = state.RunnerStateJumpLanded
+		}
+	case state.RunnerStateJumpLanded:
+		switch e {
+		case event.InputMoveRight:
+			toState = state.RunnerStateRunAccelerating
+		case event.InputJumpPress:
+			toState = state.RunnerStateJumpCharging
+		case event.InputMoveRelease:
+			toState = state.RunnerStateIdle
+		}
 	}
 
 	sm.currentState = toState

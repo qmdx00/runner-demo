@@ -10,6 +10,11 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
+const (
+	// HACK: hardcoded ground level for the runner test
+	defaultGroundLevel = 16.0
+)
+
 type Runner struct {
 	ticker *Ticker
 	pos    *Position
@@ -30,12 +35,12 @@ func NewRunner() *Runner {
 
 	return &Runner{
 		ticker: NewTicker(),
-		pos:    NewPosition(0, 16),
+		pos:    NewPosition(0, defaultGroundLevel),
 		stateM: stateM,
 
-		maxVX:        0.5,  // 0.1 grid cell per 100ms
-		maxVY:        1.0,  // 0.2 grid cell per 100ms
-		acceleration: 0.05, // acceleration rate for running
+		maxVX:        0.5,  // 0.5 grid cell per 100ms
+		maxVY:        1.0,  // 1.0 grid cell per 100ms
+		acceleration: 0.03, // slightly slower acceleration for better control
 	}
 }
 
@@ -56,26 +61,19 @@ func (r *Runner) HandleStateTransitions() error {
 		r.stateM.PushEvent(event.InputJumpRelease)
 	}
 
-	// if r.vY > 0 {
-	// 	r.stateM.PushEvent(event.RunnerVelocityYNegative)
-	// } else if r.vY < 0 {
-	// 	r.stateM.PushEvent(event.RunnerGrounded)
-	// } else {
-	// 	r.stateM.PushEvent(event.RunnerLanded)
-	// }
-
 	if r.latestUpdate == 0 {
 		r.latestUpdate = time.Now().UnixMilli()
 	}
 
 	switch r.stateM.CurrentState() {
+	case state.RunnerStateIdle:
+		r.vX = 0 // reset horizontal velocity
 	case state.RunnerStateRunAccelerating:
 		if r.vX < r.maxVX {
 			r.vX += r.acceleration
 		} else {
-			// Velocity has reached maximum, transition to cruising
 			r.vX = r.maxVX
-			r.stateM.PushEvent(event.InputMoveRight) // This will trigger transition to cruising
+			r.stateM.PushEvent(event.RunnerReachedMaxHorizontalSpeed)
 		}
 	case state.RunnerStateRunCruising:
 		// Maintain maximum velocity
@@ -85,35 +83,51 @@ func (r *Runner) HandleStateTransitions() error {
 			r.vX -= r.acceleration
 			if r.vX <= 0 {
 				r.vX = 0
-				// Transition to idle when velocity reaches zero
-				r.stateM.currentState = state.RunnerStateIdle
+				r.stateM.PushEvent(event.RunnerHorizontalStopped)
 			}
 		}
+	case state.RunnerStateRunStopped:
+		r.vX = 0 // Reset horizontal velocity on stop
 	case state.RunnerStateJumpCharging:
+		// Build up jump power
 		if r.vY < r.maxVY {
-			r.vY += r.acceleration
+			r.vY += r.acceleration * 2 // Faster charge rate
 		} else {
-			// Velocity has reached maximum, transition to rising
 			r.vY = r.maxVY
-			r.stateM.PushEvent(event.InputJumpRelease)
 		}
 	case state.RunnerStateJumpRising:
-		if r.vY > 0 {
-			r.vY -= r.acceleration // simulate gravity
-		} else {
-			// Transition to falling when velocity becomes zero or negative
-			r.stateM.currentState = state.RunnerStateJumpFalling
+		// Apply gravity
+		r.vY -= r.acceleration * 1.5
+		if r.vY <= 0 {
+			r.vY = 0
+			r.stateM.PushEvent(event.RunnerReachedMaxVerticalHeight)
 		}
 	case state.RunnerStateJumpFalling:
-		if r.vY < 0 {
-			r.vY += r.acceleration // simulate gravity
-		} else {
-			r.stateM.PushEvent(event.RunnerLanded)
-			r.vY = 0 // reset vertical velocity
+		// Apply gravity (falling)
+		r.vY -= r.acceleration * 1.5
+
+		// Check if we hit the ground
+		groundLevel := defaultGroundLevel
+		if r.pos.Y >= groundLevel {
+			// r.pos.Y = groundLevel
+			r.vY = 0
+			r.stateM.PushEvent(event.RunnerVerticalLanded)
 		}
-	case state.RunnerStateIdle:
-		r.vX = 0 // reset horizontal velocity
+	case state.RunnerStateJumpLanded:
+		r.vY = 0
+		// Reduce horizontal velocity on landing
+		if r.vX > 0 {
+			r.vX -= r.acceleration * 0.5
+			if r.vX < 0 {
+				r.vX = 0
+				r.stateM.PushEvent(event.RunnerHorizontalStopped)
+			}
+		} else {
+			r.vX = 0 // Reset horizontal velocity on landing
+			r.stateM.PushEvent(event.RunnerHorizontalStopped)
+		}
 	default:
+		// do nothing
 	}
 
 	// calculate the movement distance based on the velocity
@@ -146,11 +160,11 @@ func (r *Runner) Render(screen *ebiten.Image) {
 
 func (r *Runner) imageByState() *ebiten.Image {
 	switch r.stateM.currentState {
-	case state.RunnerStateIdle:
+	case state.RunnerStateIdle, state.RunnerStateRunStopped, state.RunnerStateJumpLanded:
 		return static.RunnerIdleSprite.FrameByTicker(int(r.ticker.counter))
-	case state.RunnerStateRunAccelerating, state.RunnerStateRunCruising, state.RunnerStateRunDecelerating, state.RunnerStateRunStopping:
+	case state.RunnerStateRunAccelerating, state.RunnerStateRunCruising, state.RunnerStateRunDecelerating:
 		return static.RunnerRunSprite.FrameByTicker(int(r.ticker.counter))
-	case state.RunnerStateJumpCharging, state.RunnerStateJumpRising, state.RunnerStateJumpFalling, state.RunnerStateJumpLanding:
+	case state.RunnerStateJumpCharging, state.RunnerStateJumpRising, state.RunnerStateJumpFalling:
 		return static.RunnerJumpSprite.FrameByTicker(int(r.ticker.counter))
 	default:
 		panic("unknown runner state")

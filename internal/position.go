@@ -44,3 +44,12 @@ func (p *Position) MoveInWindow(dx, dy float64) {
 		p.Y = float64(p.rows - 1)
 	}
 }
+
+// IsOnGround checks if the position is on the ground or on a platform
+func (p *Position) IsOnGround(groundLevel float64) bool {
+	// Check if on ground
+	if p.Y >= groundLevel {
+		return true
+	}
+	return false
+}

@@ -8,12 +8,12 @@ const (
 	RunnerStateRunAccelerating
 	RunnerStateRunCruising
 	RunnerStateRunDecelerating
-	RunnerStateRunStopping
+	RunnerStateRunStopped
 
 	RunnerStateJumpCharging
 	RunnerStateJumpRising
 	RunnerStateJumpFalling
-	RunnerStateJumpLanding
+	RunnerStateJumpLanded
 )
 
 // String returns the string representation of the RunnerState.
@@ -27,16 +27,16 @@ func (s RunnerState) String() string {
 		return "Run Cruising"
 	case RunnerStateRunDecelerating:
 		return "Run Decelerating"
-	case RunnerStateRunStopping:
-		return "Run Stopping"
+	case RunnerStateRunStopped:
+		return "Run Stopped"
 	case RunnerStateJumpCharging:
 		return "Jump Charging"
 	case RunnerStateJumpRising:
 		return "Jump Rising"
 	case RunnerStateJumpFalling:
 		return "Jump Falling"
-	case RunnerStateJumpLanding:
-		return "Jump Landing"
+	case RunnerStateJumpLanded:
+		return "Jump Landed"
 	default:
 		return "Unknown State"
 	}
@@ -46,14 +46,12 @@ func (s RunnerState) String() string {
 func (s RunnerState) IsRunning() bool {
 	return s == RunnerStateRunAccelerating ||
 		s == RunnerStateRunCruising ||
-		s == RunnerStateRunDecelerating ||
-		s == RunnerStateRunStopping
+		s == RunnerStateRunDecelerating
 }
 
 // IsJumping checks if the RunnerState is Jumping.
 func (s RunnerState) IsJumping() bool {
 	return s == RunnerStateJumpCharging ||
 		s == RunnerStateJumpRising ||
-		s == RunnerStateJumpFalling ||
-		s == RunnerStateJumpLanding
+		s == RunnerStateJumpFalling
 }
