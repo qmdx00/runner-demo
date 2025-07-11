@@ -1,61 +1,91 @@
 package internal
 
 import (
+	"fmt"
 	"runner-demo/internal/event"
 	"runner-demo/internal/state"
 )
 
-type Transition struct {
-	event    event.RunnerControlEvent
-	From, To state.RunnerState
-}
-
 type StateMachine struct {
 	currentState state.RunnerState
-	transitions  map[event.RunnerControlEvent][]Transition
+	eventBus     *event.EventBus
 }
 
 func NewStateMachine(currentState state.RunnerState) *StateMachine {
 	return &StateMachine{
 		currentState: currentState,
-		transitions: map[event.RunnerControlEvent][]Transition{
-			event.EventAccelerate: {
-				{event: event.EventAccelerate, From: state.RunnerStateIdle, To: state.RunnerStateRunAccelerating},
-				{event: event.EventAccelerate, From: state.RunnerStateRunDecelerating, To: state.RunnerStateRunAccelerating},
-				{event: event.EventAccelerate, From: state.RunnerStateRunCruising, To: state.RunnerStateRunAccelerating},
-				{event: event.EventAccelerate, From: state.RunnerStateRunStopping, To: state.RunnerStateRunAccelerating},
-				{event: event.EventAccelerate, From: state.RunnerStateJumpLanding, To: state.RunnerStateRunAccelerating},
-			},
-			event.EventDecelerate: {
-				{event: event.EventDecelerate, From: state.RunnerStateRunAccelerating, To: state.RunnerStateRunDecelerating},
-				{event: event.EventDecelerate, From: state.RunnerStateRunCruising, To: state.RunnerStateRunDecelerating},
-			},
-			event.EventJump: {
-				{event: event.EventJump, From: state.RunnerStateIdle, To: state.RunnerStateJumpCharging},
-				{event: event.EventJump, From: state.RunnerStateRunAccelerating, To: state.RunnerStateJumpCharging},
-				{event: event.EventJump, From: state.RunnerStateRunCruising, To: state.RunnerStateJumpCharging},
-				{event: event.EventJump, From: state.RunnerStateRunDecelerating, To: state.RunnerStateJumpCharging},
-				{event: event.EventJump, From: state.RunnerStateRunStopping, To: state.RunnerStateJumpCharging},
-			},
-		},
+		eventBus:     event.NewEventBus(),
 	}
+}
+
+func (sm *StateMachine) PushEvent(e event.RunnerEvent) {
+	sm.eventBus.Push(e)
 }
 
 func (sm *StateMachine) CurrentState() state.RunnerState {
 	return sm.currentState
 }
 
-// func (sm *StateMachine) HandleEvent(event event.RunnerControlEvent) error {
-// 	transitions, exists := sm.transitions[event]
-// 	if !exists {
-// 		return fmt.Errorf("event %v not supported", event)
-// 	}
+func (sm *StateMachine) HandleEvent() {
+	for {
+		e, ok := sm.eventBus.Pop()
+		if !ok {
+			break
+		}
+		sm.transition(e)
+	}
+}
 
-// 	for _, transition := range transitions {
-// 		if transition.From == sm.currentState {
-// 			sm.currentState = transition.To
-// 			return nil
-// 		}
-// 	}
-// 	return fmt.Errorf("invalid transition from %v on event %v", sm.currentState, event)
-// }
+func (sm *StateMachine) transition(e event.RunnerEvent) {
+	fromState, toState := sm.currentState, state.RunnerStateIdle
+
+	switch fromState {
+	case state.RunnerStateIdle:
+		switch e {
+		case event.InputMoveRight:
+			toState = state.RunnerStateRunAccelerating
+		case event.InputJumpPress:
+			toState = state.RunnerStateJumpCharging
+		}
+	case state.RunnerStateRunAccelerating:
+		switch e {
+		case event.InputMoveRight:
+			toState = state.RunnerStateRunCruising
+		case event.InputMoveRelease:
+			toState = state.RunnerStateRunDecelerating
+		case event.InputJumpPress:
+			toState = state.RunnerStateJumpCharging
+		}
+	case state.RunnerStateRunCruising:
+		switch e {
+		case event.InputMoveLeft:
+			toState = state.RunnerStateRunDecelerating
+		case event.InputMoveRelease:
+			toState = state.RunnerStateRunDecelerating
+		case event.InputJumpPress:
+			toState = state.RunnerStateJumpCharging
+		}
+	case state.RunnerStateRunDecelerating:
+		// not effected by event
+	case state.RunnerStateRunStopping:
+		// not effected by event
+	case state.RunnerStateJumpCharging:
+		switch e {
+		case event.InputJumpRelease:
+			toState = state.RunnerStateJumpRising
+		}
+	case state.RunnerStateJumpRising:
+		// not effected by event
+	case state.RunnerStateJumpFalling:
+		// not effected by event
+	case state.RunnerStateJumpLanding:
+		// not effected by event
+	}
+
+	sm.currentState = toState
+
+	// DEBUG: Log the state transition
+	if fromState != toState {
+		fmt.Printf("Transitioning from %s to %s due to event %s\n", fromState, toState, e)
+	}
+}

@@ -2,6 +2,7 @@ package internal
 
 import (
 	"runner-demo/internal/config"
+	"runner-demo/internal/event"
 	"runner-demo/internal/state"
 	"runner-demo/internal/static"
 	"time"
@@ -36,38 +37,32 @@ func NewRunner() *Runner {
 }
 
 func (r *Runner) HandleStateTransitions() error {
+	// move input handling
 	if ebiten.IsKeyPressed(ebiten.KeyArrowRight) || ebiten.IsKeyPressed(ebiten.KeyD) {
-		switch r.stateM.CurrentState() {
-		case state.RunnerStateIdle, state.RunnerStateRunDecelerating:
-			r.stateM.currentState = state.RunnerStateRunAccelerating
-		case state.RunnerStateRunCruising, state.RunnerStateRunAccelerating:
-			// already running, do nothing
-		default:
-			// handle other states if necessary
-		}
+		r.stateM.PushEvent(event.InputMoveRight)
+	} else if ebiten.IsKeyPressed(ebiten.KeyArrowLeft) || ebiten.IsKeyPressed(ebiten.KeyA) {
+		r.stateM.PushEvent(event.InputMoveLeft)
+	} else {
+		r.stateM.PushEvent(event.InputMoveRelease)
 	}
-	if ebiten.IsKeyPressed(ebiten.KeyArrowLeft) || ebiten.IsKeyPressed(ebiten.KeyA) {
-		switch r.stateM.CurrentState() {
-		case state.RunnerStateIdle, state.RunnerStateRunCruising, state.RunnerStateRunAccelerating:
-			r.stateM.currentState = state.RunnerStateRunDecelerating
-		case state.RunnerStateRunDecelerating:
-			// already decelerating, do nothing
-		default:
-			// handle other states if necessary
-		}
-	}
+
+	// jump input handling
 	if ebiten.IsKeyPressed(ebiten.KeySpace) {
-		switch r.stateM.CurrentState() {
-		case state.RunnerStateIdle, state.RunnerStateRunAccelerating, state.RunnerStateRunCruising, state.RunnerStateRunDecelerating:
-			r.stateM.currentState = state.RunnerStateJumpCharging
-		case state.RunnerStateJumpCharging:
-			// already charging jump, do nothing
-		case state.RunnerStateJumpRising, state.RunnerStateJumpFalling:
-			// already in a jump, do nothing
-		default:
-			// handle other states if necessary
-		}
+		r.stateM.PushEvent(event.InputJumpPress)
+	} else {
+		r.stateM.PushEvent(event.InputJumpRelease)
 	}
+
+	// if r.vY > 0 {
+	// 	r.stateM.PushEvent(event.RunnerVelocityYNegative)
+	// } else if r.vY < 0 {
+	// 	r.stateM.PushEvent(event.RunnerGrounded)
+	// } else {
+	// 	r.stateM.PushEvent(event.RunnerLanded)
+	// }
+
+	// Process all events in the event bus
+	r.stateM.HandleEvent()
 
 	if r.latestUpdate == 0 {
 		r.latestUpdate = time.Now().UnixMilli()
@@ -78,39 +73,37 @@ func (r *Runner) HandleStateTransitions() error {
 		if r.vX < r.maxVX {
 			r.vX += r.acceleration
 		} else {
-			r.stateM.currentState = state.RunnerStateRunCruising
+			// Transition to cruising when max velocity is reached
+			r.stateM.PushEvent(event.InputMoveRight) // This will be handled by the state machine
 		}
 	case state.RunnerStateRunCruising:
-		// maintain current velocity, if no input is detected, transition to decelerating state
-		if !ebiten.IsKeyPressed(ebiten.KeyArrowRight) && !ebiten.IsKeyPressed(ebiten.KeyD) {
-			r.stateM.currentState = state.RunnerStateRunDecelerating
-		}
+		// Maintain velocity
 	case state.RunnerStateRunDecelerating:
 		if r.vX > 0 {
 			r.vX -= r.acceleration
 			if r.vX < 0 {
 				r.vX = 0
 			}
-		} else {
-			r.stateM.currentState = state.RunnerStateIdle
 		}
 	case state.RunnerStateJumpCharging:
 		if r.vY < r.maxVY {
 			r.vY += r.acceleration
 		} else {
-			r.stateM.currentState = state.RunnerStateJumpRising
+			// Transition to rising when max velocity is reached
+			r.stateM.PushEvent(event.InputJumpRelease)
 		}
 	case state.RunnerStateJumpRising:
 		if r.vY > 0 {
 			r.vY -= r.acceleration // simulate gravity
 		} else {
+			// Transition to falling when velocity becomes zero or negative
 			r.stateM.currentState = state.RunnerStateJumpFalling
 		}
 	case state.RunnerStateJumpFalling:
 		if r.vY < 0 {
 			r.vY += r.acceleration // simulate gravity
 		} else {
-			r.stateM.currentState = state.RunnerStateIdle
+			r.stateM.PushEvent(event.RunnerLanded)
 			r.vY = 0 // reset vertical velocity
 		}
 	case state.RunnerStateIdle:
